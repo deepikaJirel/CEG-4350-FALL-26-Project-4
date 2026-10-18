@@ -40,7 +40,7 @@ int writeFATs()
     }
 
     // Write FAT 1 to sectors 12-22
-    if (floppy_write(0, 12, (void *)fat1, 512 * 11))
+   if (floppy_write(0, FAT1_SECTOR, (void *)fat1, FAT_SIZE))
     {
         print("Error: could not write FAT 1 to floppy!\n");
         return -3;
@@ -58,9 +58,9 @@ int writeCurrentDirectory()
     }
     if (currentDirectory.directoryEntry->startingCluster == 0)
     {
-        if (floppy_write(0, 23,
+        if (floppy_write(0, ROOT_DIR_SECTOR,
                          (void *)currentDirectory.startingAddress,
-                        512))
+                        ROOT_SIZE))
         {
             print("Error: could not write directory to floppy!\n");
             return -2;
@@ -71,8 +71,7 @@ int writeCurrentDirectory()
 
 int writeCurrentFile()
 {
-
-        if (!currentFile.isOpened)
+    if (!currentFile.isOpened)
     {
         print("Error: No file is currently open!\n");
         return -1;
@@ -85,19 +84,18 @@ int writeCurrentFile()
 
     while (nextCluster != 0xFFFF)
     {
-        uint16 sector = nextCluster + CLUSTER_TO_SECTOR;
-
+    uint16 sector = nextCluster + CLUSTER_TO_SECTOR;
         if (floppy_write(
-                0,
-                sector,
-                currentFile.startingAddress + (ROOT_SIZE * (clusterCount - 1)),
+            0,
+            sector,
+            currentFile.startingAddress + (ROOT_SIZE * (clusterCount - 1)),
                 ROOT_SIZE))
                 {
             print("Error: could not write file to floppy!\n");
             return -2;
         }
         
-    nextCluster = fat0->clusters[nextCluster];
+        nextCluster = fat0->clusters[nextCluster];
 
         clusterCount++;
     }
@@ -108,8 +106,9 @@ int resizeFile(uint16 startingCluster, uint32 newFileSize)
 {
 
     // Calculate how many 512-byte clusters are needed
-    uint32 clustersRequired =
-        (newFileSize + ROOT_SIZE - 1) / ROOT_SIZE;
+uint32 clustersRequired =
+    (newFileSize + ROOT_SIZE - 1) / ROOT_SIZE;
+
 if (clustersRequired < 1 || clustersRequired > FAT_ENTRIES_MAX)
 {
     print("Error: Invalid new file size!\n");
@@ -125,7 +124,7 @@ if (clustersRequired < 1 || clustersRequired > FAT_ENTRIES_MAX)
         currentCluster = fat0->clusters[currentCluster];
     }
 
- if (clustersRequired == clustersAssigned)
+if (clustersRequired == clustersAssigned)
     {
         return 0;
     }
@@ -158,7 +157,7 @@ if (clustersRequired < 1 || clustersRequired > FAT_ENTRIES_MAX)
     }
 
     }
-  else
+    else
 {
     uint32 clustersNeeded =
         clustersRequired - clustersAssigned;
